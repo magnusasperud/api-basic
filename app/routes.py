@@ -1,13 +1,8 @@
 from flask import request, jsonify
-from . import app, get_db_cursor
+from . import app
+from database import get_db_cursor
 
-employees = [ { 'id': 1, 'name': 'Ashley' }, { 'id': 2, 'name': 'Kate' }, { 'id': 3, 'name': 'Joe' }]
-
-
-@app.route('/tasks', methods=['GET'])
-def get_tasks():
-    tasks = Task.query.all()
-    return jsonify([{'id': task.id, 'title': task.title, 'description': task.description} for task in tasks])
+employees = [ { 'id': 1, 'name': 'Ashley' }, { 'id': 2, 'name': 'Kate' }, { 'id': 3, 'name': 'Joe' }, { 'id': 4, 'name': 'Magnus' } ]
 
 @app.route('/employees', methods=['GET'])
 def get_employees():
@@ -27,17 +22,20 @@ def delete_employee(emp_id):
 @app.route('/get_data', methods=['GET'])
 def get_data_from_databricks():
 
-    try:
-        schema = request.args.get('schema')
-        table = request.args.get('table')
-        limit = request.args.get('limit', default=10, type=int)
-        skip = request.args.get('skip', default=0, type=int)
+    schema = request.args.get('schema')
+    table = request.args.get('table')
+    limit = request.args.get('limit', default=10, type=int)
+    skip = request.args.get('skip', default=0, type=int)
 
-        cursor = get_db_cursor()
-        query = f"SELECT * FROM hive_metastore.{schema}.{table} LIMIT {limit} OFFSET {skip}"
-        cursor.execute(query)
-        data = cursor.fetchall()
-        cursor.close()
+    # Input validation
+    if not schema or not table:
+        return jsonify({'error': 'Both schema and table parameters are required'}), 400
+
+    try:
+        with get_db_cursor() as cursor:
+            query = f"SELECT * FROM hive_metastore.{schema}.{table} LIMIT {limit} OFFSET {skip}"
+            cursor.execute(query)
+            data = cursor.fetchall()
 
         return jsonify(data)
     except Exception as e:
