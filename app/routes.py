@@ -28,16 +28,16 @@ def get_data_from_databricks():
     skip = request.args.get('skip', default=0, type=int)
 
     # Input validation
-    if not schema or not table:
-        return jsonify({'error': 'Both schema and table parameters are required'}), 400
+    if not schema or not table or not isinstance(schema, str) or not isinstance(table, str) or limit < 0 or skip < 0:
+        return jsonify({'error': 'Invalid input parameters'}), 400
 
     try:
         with get_db_cursor() as cursor:
-            query = f"SELECT * FROM hive_metastore.{schema}.{table} LIMIT {limit} OFFSET {skip}"
-            cursor.execute(query)
+            query = "SELECT * FROM hive_metastore.%s.%s LIMIT %s OFFSET %s"
+            cursor.execute(query, (schema, table, limit, skip))
             data = cursor.fetchall()
 
         return jsonify(data)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'An error occurred: ' + str(e)}), 500
 
