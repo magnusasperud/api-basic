@@ -11,8 +11,6 @@ def get_db_cursor():
     server_hostname = os.getenv("server_hostname")
     http_path = os.getenv("http_path")
 
-    if not access_token:
-        raise ValueError("Missing environment variable: 'p-ofnanlt-databricks_token'")
     connection = sql.connect(
         server_hostname=server_hostname,
         http_path=http_path,

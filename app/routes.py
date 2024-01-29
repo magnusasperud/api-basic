@@ -1,6 +1,6 @@
 from flask import request, jsonify
 from . import app
-from database import get_db_cursor
+from app.database import get_db_cursor
 
 employees = [ { 'id': 1, 'name': 'Ashley' }, { 'id': 2, 'name': 'Kate' }, { 'id': 3, 'name': 'Joe' }, { 'id': 4, 'name': 'Magnus' } ]
 
