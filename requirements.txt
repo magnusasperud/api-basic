@@ -1,2 +1,4 @@
 Flask
-databricks
+python-dotenv
+PyJWT
+databricks 
