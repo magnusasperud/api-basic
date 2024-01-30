@@ -1,11 +1,6 @@
 from flask import request, jsonify
-from . import app
-from app.database import get_db_cursor
-import jwt
-import datetime
-from functools import wraps
-from .services.auth_service import token_required
-"""
+from app import app
+
 employees = [ { 'id': 1, 'name': 'Ashley' }, { 'id': 2, 'name': 'Kate' }, { 'id': 3, 'name': 'Joe' }, { 'id': 4, 'name': 'Magnus' } ]
 
 @app.route('/employees', methods=['GET'])
@@ -22,4 +17,3 @@ def delete_employee(emp_id):
         return jsonify({'message': 'Employee deleted successfully'}), 200
     else:
         return jsonify({'message': 'Employee not found'}), 404
-"""
