@@ -1,6 +1,9 @@
 from flask import request, jsonify
 from . import app
 from app.database import get_db_cursor
+import jwt
+import datetime
+from functools import wraps
 
 employees = [ { 'id': 1, 'name': 'Ashley' }, { 'id': 2, 'name': 'Kate' }, { 'id': 3, 'name': 'Joe' }, { 'id': 4, 'name': 'Magnus' } ]
 
@@ -19,9 +22,47 @@ def delete_employee(emp_id):
     else:
         return jsonify({'message': 'Employee not found'}), 404
 
-@app.route('/get_data', methods=['GET'])
-def get_data_from_databricks():
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
 
+        if 'Authorization' in request.headers:
+            auth_header = request.headers['Authorization']
+            if ' ' in auth_header:
+                token = auth_header.split(" ")[1]
+
+        if not token:
+            return jsonify({'message': 'Token is missing!'}), 401
+
+        try:
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+        except:
+            return jsonify({'message': 'Token is invalid!'}), 401
+
+        return f(*args, **kwargs)
+
+    return decorated
+
+@app.route('/token', methods=['POST'])
+def generate_token():
+    expiration = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+    token = jwt.encode(
+        {
+            'exp': expiration
+        }, 
+        app.config['SECRET_KEY'], 
+        algorithm="HS256"
+    )
+
+    return jsonify({
+        'token': token,
+        'expiration': expiration.strftime("%Y-%m-%d %H:%M:%S")
+    })
+
+@app.route('/get_data', methods=['GET'])
+@token_required
+def get_data_from_databricks():
     schema = request.args.get('schema')
     table = request.args.get('table')
     limit = request.args.get('limit', default=10, type=int)
@@ -33,11 +74,10 @@ def get_data_from_databricks():
 
     try:
         with get_db_cursor() as cursor:
-            query = "SELECT * FROM hive_metastore.%s.%s LIMIT %s OFFSET %s"
+            query = f"SELECT * FROM hive_metastore.{schema}.{table} LIMIT {limit} OFFSET {skip}"
             cursor.execute(query, (schema, table, limit, skip))
             data = cursor.fetchall()
 
         return jsonify(data)
     except Exception as e:
         return jsonify({'error': 'An error occurred: ' + str(e)}), 500
-
